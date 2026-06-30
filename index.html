@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 工具箱</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8f9fb; --surface:#fff; --border:#e8ecf1; --text:#1a1d26;
+  --text2:#6b7180; --text3:#9ca3af; --accent:#4f6ef7;
+  --accent2:#06b6d4; --green:#10b981; --red:#ef4444; --amber:#f59e0b;
+  --r:12px; --r2:18px; --ease:cubic-bezier(0.4,0,0.2,1);
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 2px 8px rgba(0,0,0,.04);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Inter',-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  background:var(--bg);color:var(--text);height:100vh;overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+#app{display:flex;flex-direction:column;height:100vh}
+
+/* ── NAV ── */
+#topnav{
+  display:flex;align-items:center;height:52px;padding:0 24px;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  flex-shrink:0;gap:2px;
+}
+#topnav.hidden{display:none}
+#topnav .brand{
+  font-size:15px;font-weight:700;color:var(--text);margin-right:32px;
+  display:flex;align-items:center;gap:10px;cursor:pointer;letter-spacing:-.01em;
+}
+#topnav .brand .dot{
+  width:30px;height:30px;border-radius:8px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:13px;font-weight:700;
+}
+.nv{
+  display:flex;align-items:center;gap:7px;padding:8px 16px;
+  background:none;border:none;color:var(--text2);font-size:13px;
+  font-weight:500;cursor:pointer;border-radius:8px;font-family:inherit;
+  transition:all .15s var(--ease);
+}
+.nv:hover{color:var(--text);background:rgba(79,110,247,.06)}
+.nv.on{color:var(--accent);background:rgba(79,110,247,.08);font-weight:600}
+.nv i{font-size:15px;opacity:.7}.nv.on i{opacity:1}
+
+/* ── MAIN ── */
+#main{flex:1;overflow-y:auto}
+.view{display:none;animation:fadeIn .25s var(--ease)}
+.view.on{display:flex;flex-direction:column;min-height:100%}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── DASHBOARD ── */
+.dash{margin:auto;padding:60px 40px;max-width:960px;width:100%}
+.dash-head{margin-bottom:40px}
+.dash-head h1{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px}
+.dash-head p{font-size:14px;color:var(--text2)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r2);padding:28px 28px 24px;cursor:pointer;
+  transition:all .2s var(--ease);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;gap:14px;
+}
+.card:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,.08);border-color:var(--accent)}
+.card .ico{
+  width:44px;height:44px;border-radius:10px;display:flex;
+  align-items:center;justify-content:center;color:#fff;font-size:20px;
+  flex-shrink:0;
+}
+.ico.a{background:linear-gradient(135deg,#4f6ef7,#6366f1)}
+.ico.b{background:linear-gradient(135deg,#ec4899,#f43f5e)}
+.ico.c{background:linear-gradient(135deg,#f59e0b,#d946ef)}
+.ico.d{background:linear-gradient(135deg,#10b981,#06b6d4)}
+.card h3{font-size:16px;font-weight:650;color:var(--text)}
+.card p{font-size:13px;color:var(--text2);line-height:1.5;flex:1}
+.card .tag{
+  font-size:11px;font-weight:600;color:var(--accent);
+  background:rgba(79,110,247,.08);padding:4px 10px;border-radius:6px;
+  align-self:flex-start;
+}
+
+/* ── APP VIEWS ── */
+.app{padding:32px 40px 48px;flex:1}
+.app-hd{padding-bottom:14px;margin-bottom:24px;border-bottom:1px solid var(--border)}
+.app-hd h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
+
+.row{display:flex;gap:24px;flex:1;min-height:0}
+.side{width:320px;flex-shrink:0;display:flex;flex-direction:column;gap:14px}
+.main-col{flex:1;min-width:0}
+
+.box{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r2);padding:22px 24px;box-shadow:var(--shadow);
+}
+.box-sm{padding:16px 18px}
+.box-hd{font-size:14px;font-weight:650;margin-bottom:14px;color:var(--text)}
+.fg{margin-bottom:12px}
+.fg:last-child{margin-bottom:0}
+.fg label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.fg input,.fg select,.fg textarea{
+  width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);
+  border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none;
+  transition:border .15s var(--ease);
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent)}
+.fg textarea{resize:vertical;min-height:64px;line-height:1.6}
+.fg select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7180' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+::placeholder{color:var(--text3)}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 20px;border:none;border-radius:8px;font-size:13px;
+  font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s var(--ease);
+}
+.btn-p{background:var(--accent);color:#fff}.btn-p:hover{filter:brightness(1.1)}
+.btn-g{background:var(--green);color:#fff}.btn-g:hover{filter:brightness(1.1)}
+.btn-r{background:var(--red);color:#fff}
+.btn-o{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff}
+.btn-b{width:100%;padding:12px}
+.btn-gh{
+  background:var(--surface);border:1px solid var(--border);color:var(--text2);
+}.btn-gh:hover{color:var(--text);border-color:var(--accent)}
+.btn-xs{padding:5px 12px;font-size:11px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btns{display:flex;gap:8px}
+
+/* ── UPLOAD ── */
+.up{
+  border:2px dashed var(--border);border-radius:10px;padding:28px 16px;
+  text-align:center;cursor:pointer;background:var(--bg);transition:all .2s;
+}
+.up:hover{border-color:var(--accent)}.up.dragover{border-color:var(--accent);background:rgba(79,110,247,.04)}
+.up i{font-size:28px;color:var(--text3);margin-bottom:8px;display:block}
+.up p{font-size:12px;color:var(--text2)}.up span{font-size:11px;color:var(--text3)}
+.pv{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.pv-i{
+  width:72px;height:72px;border-radius:8px;overflow:hidden;
+  border:1px solid var(--border);position:relative;
+  animation:pop .3s ease;
+}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+.pv-i img{width:100%;height:100%;object-fit:cover}
+.pv-i .x{
+  position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;
+  background:rgba(0,0,0,.6);color:#fff;border:none;cursor:pointer;
+  font-size:10px;line-height:1;display:flex;align-items:center;justify-content:center;
+}
+
+/* ── RESULTS ── */
+.rg{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.rc{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);
+  overflow:hidden;box-shadow:var(--shadow);transition:all .2s;
+}
+.rc:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.rc img{width:100%;max-height:360px;object-fit:contain;display:block;cursor:pointer;background:#fafbfc}
+.rc .ra{display:flex;gap:6px;padding:10px 14px 14px}
+.rc .ra button{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:4px;
+  padding:8px;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text2);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:inherit;transition:all .15s;
+}
+.rc .ra button:hover{transform:translateY(-1px)}
+.rc .ra .cp:hover{border-color:var(--accent);color:var(--accent)}
+.rc .ra .dl:hover{border-color:var(--green);color:var(--green)}
+
+/* ── TOAST / MODAL ── */
+#toasts{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{
+  padding:12px 20px;border-radius:8px;font-size:13px;color:#fff;font-weight:500;
+  animation:slideUp .35s ease;box-shadow:0 8px 24px rgba(0,0,0,.15);
+}
+.toast.ok{background:rgba(6,95,70,.94)}
+.toast.err{background:rgba(127,29,29,.94)}
+.toast.inf{background:rgba(10,40,80,.94)}
+@keyframes slideUp{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal{
+  position:fixed;inset:0;background:rgba(10,15,30,.8);z-index:9998;
+  display:none;align-items:center;justify-content:center;cursor:pointer;
+}
+.modal.on{display:flex}.modal img{max-width:94%;max-height:94%;border-radius:12px}
+
+.load{
+  position:fixed;inset:0;background:rgba(255,255,255,.7);z-index:9997;
+  display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);
+}
+.load.on{display:flex}
+.load-bx{background:var(--surface);padding:36px 48px;border-radius:16px;border:1px solid var(--border);text-align:center}
+.spin{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-bx p{font-size:13px;color:var(--text2)}
+
+/* ── PROGRESS ── */
+.pw{display:none;margin-top:10px}.pw.on{display:block}
+.pb{height:3px;background:var(--bg);border-radius:99px;overflow:hidden}
+.pf{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px;transition:width .4s}
+.pt{text-align:center;font-size:11px;color:var(--text3);margin-top:6px}
+
+.rd{display:flex;gap:2px;flex-wrap:wrap}
+.rd label{
+  padding:6px 12px;border:1px solid var(--border);border-radius:8px;
+  font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s;
+}
+.rd label:hover{border-color:var(--accent)}
+.rd input[type=radio]{accent-color:var(--accent);margin-right:3px}
+
+.emp{text-align:center;color:var(--text3);padding:48px 16px;font-size:13px}
+
+#main::-webkit-scrollbar{width:4px}
+#main::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+
+@media(max-width:800px){
+  .grid{grid-template-columns:1fr}
+  .row{flex-direction:column}.side{width:100%}
+  .app{padding:20px 16px}
+  #topnav{overflow-x:auto;gap:0}
+  .nv{padding:8px 12px;font-size:12px;white-space:nowrap}
+  .dash{padding:32px 16px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<!-- ── NAV ── -->
+<nav id="topnav">
+  <div class="brand" onclick="switchView('dashboard')"><div class="dot">AI</div>AI 工具箱</div>
+  <button class="nv" data-view="gpt" onclick="switchView('gpt')"><i class="fas fa-wand-magic-sparkles"></i>图片生成</button>
+  <button class="nv" data-view="recognize" onclick="switchView('recognize')"><i class="fas fa-magnifying-glass"></i>图像识别</button>
+  <button class="nv" data-view="prompt" onclick="switchView('prompt')"><i class="fas fa-sparkles"></i>提示词生成</button>
+  <button class="nv" data-view="copy" onclick="switchView('copy')"><i class="fas fa-file-pen"></i>文案生成</button>
+</nav>
+
+<div id="main">
+
+<!-- ═══ DASHBOARD ═══ -->
+<div class="view on" id="view-dashboard">
+<div class="dash">
+  <div class="dash-head"><h1>AI 工具箱</h1><p>图片生成 · 图像识别 · 提示词 · 文案，一站完成</p></div>
+  <div class="grid">
+    <div class="card" onclick="switchView('gpt')">
+      <div class="ico a"><i class="fas fa-wand-magic-sparkles"></i></div>
+      <h3>图片生成</h3><p>文生图、图片融合、图片编辑，支持蒙版与 4K 输出</p>
+      <span class="tag">GPT Image-2</span>
+    </div>
+    <div class="card" onclick="switchView('recognize')">
+      <div class="ico b"><i class="fas fa-magnifying-glass"></i></div>
+      <h3>图像识别</h3><p>URL 或本地上传，AI 自动分析画面内容、构图与风格</p>
+      <span class="tag">GPT-4o Vision</span>
+    </div>
+    <div class="card" onclick="switchView('prompt')">
+      <div class="ico c"><i class="fas fa-sparkles"></i></div>
+      <h3>提示词生成</h3><p>多模型批量出图提示词，场景/天气/风格组合，智能去重</p>
+      <span class="tag">Multi-Model</span>
+    </div>
+    <div class="card" onclick="switchView('copy')">
+      <div class="ico d"><i class="fas fa-file-pen"></i></div>
+      <h3>文案生成</h3><p>口播 / 小红书 / 朋友圈 / 产品详情，批量生成去重</p>
+      <span class="tag">DeepSeek</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ GPT IMAGE ═══ -->
+<div class="view" id="view-gpt">
+<div id="gpt-image-app" style="flex:1;display:flex;overflow:hidden">
+<div class="app-container" style="display:flex;height:100%;flex:1">
+<aside class="sidebar" style="width:260px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0">
+  <div style="padding:22px 18px;border-bottom:1px solid var(--border)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#4f6ef7,#06b6d4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px"><i class="fas fa-magic"></i></div>
+      <div><div style="font-size:15px;font-weight:700">GPT Image-2</div><div style="font-size:10px;color:var(--text3)">Image Studio</div></div>
+    </div>
+  </div>
+  <nav class="sidebar-nav" style="flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:2px">
+    <button onclick="switchView('dashboard')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:10px">
+      <i class="fas fa-arrow-left"></i>返回工具箱
+    </button>
+    <button class="nav-item active" data-tab="generate" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:transparent;border:none;border-radius:8px;color:var(--text2);font-size:13px;cursor:pointer;font-family:inherit">
+      <i class="fas fa-wand-sparkles" style="width:20px;text-align:center"></i>图片生成
+    </button>
+    <button class="nav-item" data-tab="generate-all" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:transparent;border:none;border-radius:8px;color:var(--text2);font-size:13px;cursor:pointer;font-family:inherit">
+      <i class="fas fa-layer-group" style="width:20px;text-align:center"></i>图片融合
+    </button>
+    <button class="nav-item" data-tab="edit" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:transparent;border:none;border-radius:8px;color:var(--text2);font-size:13px;cursor:pointer;font-family:inherit">
+      <i class="fas fa-pen-to-square" style="width:20px;text-align:center"></i>图片编辑
+    </button>
+    <button class="nav-item" data-tab="history" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:transparent;border:none;border-radius:8px;color:var(--text2);font-size:13px;cursor:pointer;font-family:inherit">
+      <i class="fas fa-clock-rotate-left" style="width:20px;text-align:center"></i>历史记录
+    </button>
+  </nav>
+  <div style="padding:14px 14px 18px;border-top:1px solid var(--border)">
+    <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:6px">API Key</div>
+    <div style="display:flex;gap:6px">
+      <input type="password" id="apiKeyInput" placeholder="输入 API Key..." style="flex:1;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:monospace;outline:none;color:var(--text)">
+      <button id="toggleKeyBtn" style="width:32px;background:var(--bg);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text2)"><i class="fas fa-eye"></i></button>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;color:var(--text3)">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--text3)"></span><span id="apiStatusText">未配置</span>
+    </div>
+  </div>
+</aside>
+
+<main class="main-content" style="flex:1;overflow-y:auto;padding:32px 44px 48px">
+
+<!-- Generate -->
+<section id="tab-generate" class="tab-content active" style="display:block">
+  <div style="margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+    <h2 style="font-size:20px;font-weight:700"><i class="fas fa-wand-sparkles" style="background:linear-gradient(135deg,#4f6ef7,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent"></i> 图片生成</h2>
+  </div>
+  <div class="box" style="margin-bottom:20px">
+    <div class="fg"><label>提示词</label><textarea id="gen-prompt" rows="3" placeholder="描述你想要生成的图片..." maxlength="1000"></textarea><span style="font-size:10px;color:var(--text3);float:right;margin-top:4px"><span id="genPromptCount">0</span>/1000</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="fg"><label>尺寸</label><select id="gen-size"><option value="1024x1024">1024×1024</option><option value="1536x1024">1536×1024</option><option value="1024x1536">1024×1536</option><option value="2048x2048">2048×2048</option><option value="auto">Auto</option></select></div>
+      <div class="fg"><label>格式</label><select id="gen-format"><option value="png">PNG</option><option value="jpeg">JPEG</option><option value="webp">WebP</option></select></div>
+      <div class="fg"><label>画质</label><select id="gen-quality"><option value="auto">Auto</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
+      <div class="fg"><label>数量</label><select id="gen-n"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div>
+    </div>
+    <button id="btn-generate" class="btn btn-p btn-b" style="margin-top:14px"><i class="fas fa-wand-magic-sparkles"></i>生成</button>
+  </div>
+  <div class="box"><h3 style="font-size:15px;font-weight:650;margin-bottom:14px">结果</h3><div class="rg" id="gen-result-grid"></div></div>
+</section>
+
+<!-- Generate All -->
+<section id="tab-generate-all" class="tab-content" style="display:none">
+  <div style="margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid var(--border)"><h2 style="font-size:20px;font-weight:700"><i class="fas fa-layer-group" style="background:linear-gradient(135deg,#4f6ef7,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent"></i> 图片融合</h2></div>
+  <div class="box" style="margin-bottom:20px">
+    <div class="fg"><label>上传图片 (最多5张)</label><div class="up" id="ga-upload-area"><i class="fas fa-cloud-upload-alt"></i><p>拖拽或点击上传</p><span>PNG / JPG / WebP</span><input type="file" id="ga-file-input" accept="image/*" multiple hidden></div><div class="pv" id="ga-preview-list"></div></div>
+    <div class="fg"><label>融合描述</label><textarea id="ga-prompt" rows="2" placeholder="描述如何融合这些图片..."></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="fg"><label>尺寸</label><select id="ga-size"><option value="1024x1024">1024×1024</option><option value="1536x1024">1536×1024</option><option value="1024x1536">1024×1536</option></select></div>
+      <div class="fg"><label>数量</label><select id="ga-n"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+    </div>
+    <button id="btn-generate-all" class="btn btn-p btn-b" style="margin-top:14px"><i class="fas fa-layer-group"></i>融合</button>
+  </div>
+  <div class="box"><h3 style="font-size:15px;font-weight:650;margin-bottom:14px">结果</h3><div class="rg" id="ga-result-grid"></div></div>
+</section>
+
+<!-- Edit -->
+<section id="tab-edit" class="tab-content" style="display:none">
+  <div style="margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid var(--border)"><h2 style="font-size:20px;font-weight:700"><i class="fas fa-pen-to-square" style="background:linear-gradient(135deg,#4f6ef7,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent"></i> 图片编辑</h2></div>
+  <div class="box" style="margin-bottom:20px">
+    <div class="fg"><label>上传图片 (最多16张)</label><div class="up" id="edit-upload-area"><i class="fas fa-cloud-upload-alt"></i><p>拖拽或点击上传</p><span>单张 &lt;50MB</span><input type="file" id="edit-file-input" accept="image/*" multiple hidden></div><div class="pv" id="edit-preview-list"></div></div>
+    <div class="fg"><label>编辑描述</label><textarea id="edit-prompt" rows="2" placeholder="描述如何编辑..."></textarea></div>
+    <div class="fg"><label>蒙版 (可选)</label><div class="up" id="mask-upload-area" style="padding:16px"><i class="fas fa-mask"></i><p>上传蒙版 PNG</p><input type="file" id="mask-file-input" accept="image/png" hidden></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+      <div class="fg"><label>模型</label><select id="edit-model"><option value="gpt-image-2">GPT-Image-2</option><option value="gpt-image-1">GPT-Image-1</option></select></div>
+      <div class="fg"><label>尺寸</label><select id="edit-size"><option value="auto">Auto</option><option value="1024x1024">1024×1024</option><option value="1536x1024">1536×1024</option><option value="1024x1536">1024×1536</option></select></div>
+      <div class="fg"><label>数量</label><select id="edit-n"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+    </div>
+    <button id="btn-edit" class="btn btn-p btn-b" style="margin-top:14px"><i class="fas fa-pen-to-square"></i>编辑</button>
+  </div>
+  <div class="box"><h3 style="font-size:15px;font-weight:650;margin-bottom:14px">结果</h3><div class="rg" id="edit-result-grid"></div></div>
+</section>
+
+<!-- History -->
+<section id="tab-history" class="tab-content" style="display:none">
+  <div style="margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid var(--border)"><h2 style="font-size:20px;font-weight:700"><i class="fas fa-clock-rotate-left" style="background:linear-gradient(135deg,#4f6ef7,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent"></i> 历史</h2></div>
+  <button id="clearHistoryBtn" class="btn btn-gh" style="margin-bottom:16px"><i class="fas fa-trash-can"></i>清空</button>
+  <div id="history-list"><p style="text-align:center;color:var(--text3);padding:48px">暂无记录</p></div>
+</section>
+</main>
+</div>
+<div class="loading-overlay" id="loadingOverlay" style="position:fixed;inset:0;background:rgba(255,255,255,.7);display:none;align-items:center;justify-content:center;z-index:9999"><div style="background:var(--surface);padding:36px 48px;border-radius:16px;border:1px solid var(--border)"><div class="spin"></div><p style="font-size:13px;color:var(--text2);text-align:center;margin-top:12px" id="loadingText">处理中...</p></div></div>
+</div>
+</div>
+
+<!-- ═══ 图像识别 ═══ -->
+<div class="view" id="view-recognize">
+<div class="app">
+  <div class="app-hd"><h2>图像识别</h2></div>
+  <div class="row">
+    <div class="side">
+      <div class="box box-sm btns">
+        <button class="btn btn-p btn-xs" id="rec-mode-s" style="flex:1" onclick="Rec.mode('single')">单张</button>
+        <button class="btn btn-gh btn-xs" id="rec-mode-b" style="flex:1" onclick="Rec.mode('batch')">批量</button>
+      </div>
+      <div id="rec-single">
+        <div class="box box-sm"><div class="fg"><label>图片 URL</label><div style="display:flex;gap:8px"><input id="rec-url" placeholder="https://..."><button class="btn btn-p btn-xs" onclick="Rec.byUrl()">识别</button></div></div></div>
+        <div class="box box-sm"><div class="fg"><label>上传图片</label><div class="up" id="rec-zone" style="padding:22px"><p>拖拽或点击</p><span>JPG/PNG &lt;10MB</span><input type="file" id="rec-file" accept=".jpg,.jpeg,.png" hidden></div><div id="rec-preview" style="display:none;margin-top:10px"><img id="rec-pimg" style="max-height:140px;border-radius:8px"><button class="btn btn-p btn-b btn-xs" onclick="Rec.byUpload()" style="margin-top:8px">开始识别</button></div></div></div>
+      </div>
+      <div id="rec-batch" style="display:none">
+        <div class="box box-sm"><div class="fg"><label>批量 URL (每行一个)</label><textarea id="rec-burls" rows="3"></textarea><button class="btn btn-p btn-b btn-xs" onclick="Rec.batchUrl()">批量识别</button></div></div>
+        <div class="box box-sm"><div class="fg"><label>批量上传</label><div class="up" id="rec-bzone" style="padding:20px"><p>拖拽或点击多选</p><input type="file" id="rec-bfile" accept=".jpg,.jpeg,.png" multiple hidden></div><div id="rec-bnames" style="font-size:11px;color:var(--text2);margin-top:8px"></div><button class="btn btn-g btn-b btn-xs" id="rec-bupload-btn" style="display:none;margin-top:8px" onclick="Rec.batchUpload()">开始批量识别</button></div></div>
+      </div>
+    </div>
+    <div class="main-col"><div class="box" style="min-height:400px"><h3 style="font-size:15px;font-weight:650;margin-bottom:14px">识别结果</h3><div id="rec-results"><div class="emp">上传图片或输入 URL 开始</div></div></div></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ 提示词生成 ═══ -->
+<div class="view" id="view-prompt">
+<div class="app">
+  <div class="app-hd"><h2>提示词生成</h2></div>
+  <div class="row">
+    <div class="side">
+      <div class="box">
+        <div class="fg"><label>模型</label><select id="p-model"></select></div>
+        <div class="fg"><label>目标人群</label><select id="p-audience"><option>默认随机(55/15/30)</option><option>女大学生 (55%)</option><option>男大学生 (15%)</option><option>上班族 (30%)</option></select></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="fg"><label>场景</label><select id="p-scene"><option>随机</option></select></div>
+          <div class="fg"><label>光线</label><select id="p-weather"><option>随机</option></select></div>
+          <div class="fg"><label>风格</label><select id="p-style"><option>随机</option></select></div>
+          <div class="fg"><label>动作</label><select id="p-action"><option>随机</option></select></div>
+        </div>
+        <div class="fg"><label>批次 (×4张/批)</label><div class="rd" id="p-batch"></div></div>
+        <div class="fg"><label>相似度容忍 <span id="p-simv">65%</span></label><input type="range" id="p-sim" value="65" min="0" max="100" style="width:100%"></div>
+        <div class="fg"><label>附加要求</label><input id="p-extra" placeholder="无特殊要求"></div>
+        <div class="btns" style="margin-top:12px"><button class="btn btn-g" id="p-btn" onclick="Pr.start()" style="flex:1">开始生成</button><button class="btn btn-r btn-xs" id="p-stop" onclick="Pr.stop()" disabled>停止</button></div>
+        <div class="pw" id="p-progress"><div class="pb"><div class="pf" id="p-bar"></div></div><div class="pt" id="p-msg"></div></div>
+      </div>
+    </div>
+    <div class="main-col">
+      <div class="box">
+        <div class="btns" style="margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px">
+          <button class="btn btn-gh btn-xs" id="ptab-res" style="border-bottom:2px solid var(--accent)" onclick="Pr.switch('res')">结果</button>
+          <button class="btn btn-gh btn-xs" id="ptab-hist" onclick="Pr.switch('hist')">历史</button>
+        </div>
+        <div id="p-res"><div class="emp">配置参数后点击开始</div></div>
+        <div id="p-hist" style="display:none">
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <input id="p-hsearch" placeholder="搜索..." style="flex:1;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text)">
+            <select id="p-hsort" style="width:90px;padding:7px 10px;font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text)"><option value="latest">最新</option><option value="most_copied">最多复制</option></select>
+            <button class="btn btn-gh btn-xs" id="p-batchmode" onclick="Pr.toggleBatch()">多选</button>
+            <button class="btn btn-r btn-xs" id="p-batchdel" style="display:none" onclick="Pr.batchDelete()">删除</button>
+          </div>
+          <div id="p-history"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ 文案生成 ═══ -->
+<div class="view" id="view-copy">
+<div class="app">
+  <div class="app-hd"><h2>文案生成</h2></div>
+  <div class="row">
+    <div class="side">
+      <div class="box">
+        <div class="fg"><label>文案类型</label><select id="c-type"></select></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="fg"><label>数量</label><input type="number" id="c-count" value="10" min="1" max="5000"></div>
+          <div class="fg"><label>并发</label><select id="c-workers"><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option><option>6</option><option>8</option><option>10</option></select></div>
+        </div>
+        <div class="fg"><label>侧重点</label><input id="c-topic" placeholder="露营烧烤 / 送礼 / 自饮..."></div>
+        <div class="fg"><label>风格</label><textarea id="c-style" rows="2" placeholder="语气幽默、面向年轻人..."></textarea></div>
+        <button class="btn btn-o btn-b" id="c-btn" onclick="Cp.start()">开始生成</button>
+        <div class="btns" style="margin-top:8px"><button class="btn btn-r btn-xs" id="c-stop" onclick="Cp.stop()" disabled style="flex:1">停止</button><button class="btn btn-gh btn-xs" onclick="Cp.clear()" style="flex:1">清空</button></div>
+        <div class="pw" id="c-progress"><div class="pb"><div class="pf" id="c-bar"></div></div><div class="pt" id="c-msg"></div></div>
+      </div>
+      <div class="box box-sm"><h3 style="font-size:13px;font-weight:650;margin-bottom:8px">历史任务</h3><div id="c-jobs" style="font-size:12px;color:var(--text2)">加载中...</div></div>
+    </div>
+    <div class="main-col"><div class="box" style="min-height:400px"><h3 style="font-size:15px;font-weight:650;margin-bottom:14px">结果 <span id="c-rcount" style="font-size:12px;color:var(--text2)"></span></h3><div id="c-results"><div class="emp">配置参数后点击开始</div></div></div></div>
+  </div>
+</div>
+</div>
+
+</div><!-- /#main -->
+</div><!-- /#app -->
+
+<!-- ── SHARED OVERLAYS ── -->
+<div class="load" id="loading"><div class="load-bx"><div class="spin"></div><p id="loading-text">处理中...</p></div></div>
+<div class="modal" id="modal" onclick="this.classList.remove('on')"><img id="modal-img"></div>
+<div id="toasts"></div>
+
+<script>
+/* ── UTILS ── */
+const $=id=>document.getElementById(id);
+function toast(m,t='inf'){
+  const d=document.createElement('div');d.className='toast '+(t==='success'?'ok':t==='error'?'err':'inf');
+  d.textContent=m;$('toasts').appendChild(d);setTimeout(()=>d.remove(),2800)
+}
+function showLoading(t){$('loading-text').textContent=t||'处理中...';$('loading').classList.add('on')}
+function hideLoading(){$('loading').classList.remove('on')}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function openModal(u){$('modal-img').src=u;$('modal').classList.add('on')}
+
+/* ── VIEW SWITCHING ── */
+let currentView='dashboard';
+function switchView(name){
+  if(currentView===name)return;
+  if(currentView==='gpt'){
+    const s=document.getElementById('gpt-scoped-css');if(s)s.remove();
+    $('topnav').classList.remove('hidden');
+  }
+  document.querySelectorAll('#topnav .nv').forEach(n=>n.classList.remove('on'));
+  const nb=document.querySelector(`#topnav .nv[data-view="${name}"]`);
+  if(nb)nb.classList.add('on');
+  document.querySelectorAll('#main>.view').forEach(v=>v.classList.remove('on'));
+  const ve=$('view-'+name);if(ve)ve.classList.add('on');
+  currentView=name;
+  if(name==='gpt'){$('topnav').classList.add('hidden');loadGptImage();}
+  if(name==='prompt')Pr.init();
+  if(name==='copy')Cp.init();
+}
+
+/* ── GPT IMAGE LOADER ── */
+let _gptLoaded=false;
+function loadGptImage(){
+  if(_gptLoaded)return;_gptLoaded=true;
+  const css=document.createElement('link');css.id='gpt-scoped-css';css.rel='stylesheet';css.href='/static/gpt-image/styles-scoped.css';document.head.appendChild(css);
+  const s=document.createElement('script');s.src='/static/gpt-image/app.js';
+  s.onload=function(){if(typeof window.init==='function')try{window.init()}catch(e){console.error(e)}};
+  document.head.appendChild(s);
+}
+
+/* ── REC ── */
+const Rec={
+  mode:'single',file:null,bf:[],
+  mode(m){this.mode=m;$('rec-mode-s').className=m==='single'?'btn btn-p btn-xs':'btn btn-gh btn-xs';$('rec-mode-b').className=m==='batch'?'btn btn-p btn-xs':'btn btn-gh btn-xs';$('rec-single').style.display=m==='single'?'':'none';$('rec-batch').style.display=m==='batch'?'':'none'},
+  async byUrl(){const u=$('rec-url').value.trim();if(!u){toast('请输入URL','error');return}showLoading('识别中...');try{const r=await fetch('/api/image/recognize/url',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:u})});const d=await r.json();if(!r.ok)throw new Error(d.detail);this.show(d.result,u);toast('完成','success')}catch(e){this.err(e.message)}hideLoading()},
+  async byUpload(){if(!this.file){toast('请选择图片','error');return}showLoading('识别中...');try{const fd=new FormData();fd.append('file',this.file);const r=await fetch('/api/image/recognize/upload',{method:'POST',body:fd});const d=await r.json();if(!r.ok)throw new Error(d.detail);this.show(d.result,this.file.name);toast('完成','success')}catch(e){this.err(e.message)}hideLoading()},
+  async batchUrl(){const t=$('rec-burls').value.trim();if(!t){toast('请输入URL','error');return}const urls=t.split('\n').map(s=>s.trim()).filter(Boolean);if(urls.length>20){toast('最多20张','error');return}showLoading('批量识别中...');try{const r=await fetch('/api/image/recognize/batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:urls})});const d=await r.json();if(!r.ok)throw new Error(d.detail);this.showBatch(d);toast('完成','success')}catch(e){this.err(e.message)}hideLoading()},
+  async batchUpload(){if(!this.bf.length){toast('请选择图片','error');return}showLoading('批量识别中...');try{const fd=new FormData();this.bf.forEach(f=>fd.append('files',f));const r=await fetch('/api/image/recognize/batch/upload',{method:'POST',body:fd});const d=await r.json();if(!r.ok)throw new Error(d.detail);this.showBatch(d);toast('完成','success')}catch(e){this.err(e.message)}hideLoading()},
+  show(r,src){let t=typeof r==='object'&&r.analysis?r.analysis:typeof r==='string'?r:JSON.stringify(r,null,2);$('rec-results').innerHTML=`<div style="padding:16px;line-height:1.7;font-size:13px"><span style="font-size:11px;color:var(--text3)">${esc(src)}</span><span style="margin-left:8px;font-size:10px;font-weight:600;color:var(--green);background:rgba(16,185,129,.1);padding:2px 8px;border-radius:6px">完成</span><div style="margin-top:10px">${esc(t).replace(/\n/g,'<br>')}</div></div>`},
+  showBatch(d){let h=`<div style="margin-bottom:10px;font-size:12px"><span style="font-weight:600;color:var(--green)">${d.success} 成功</span>${d.failed?` <span style="font-weight:600;color:var(--red)">${d.failed} 失败</span>`:''}</div>`;(d.results||[]).forEach((r,i)=>{const ok=r.success;let t='';if(ok){t=typeof r.result==='object'&&r.result.analysis?r.result.analysis:typeof r.result==='string'?r.result:JSON.stringify(r.result)}h+=`<div style="background:var(--surface);border:1px solid ${ok?'var(--border)':'rgba(239,68,68,.3)'};border-radius:8px;padding:12px;margin-bottom:6px;font-size:13px"><span>${i+1}. ${esc(r.url||r.filename||'')}</span><span style="margin-left:6px;font-size:10px;font-weight:600;color:${ok?'var(--green)':'var(--red)'}">${ok?'成功':'失败'}</span>${ok?`<div style="margin-top:8px;line-height:1.6">${esc(t).replace(/\n/g,'<br>')}</div>`:r.error?`<div style="margin-top:6px;color:var(--red)">${esc(r.error)}</div>`:''}</div>`});$('rec-results').innerHTML=h},
+  err(m){$('rec-results').innerHTML=`<div style="text-align:center;padding:32px;color:var(--red)">${esc(m)}</div>`}
+};
+
+/* ── PR ── */
+const Pr={
+  pt:null,bm:false,
+  async init(){try{const r=await fetch('/api/prompt/config'),c=await r.json();$('p-model').innerHTML=Object.entries(c.available_models).map(([k,v])=>`<option value="${k}" ${k===c.current_model?'selected':''}>${v}</option>`).join('');['p-scene','p-weather','p-style','p-action'].forEach(id=>{const s=$(id),kn=id.replace('p-',''),key=kn+'_options';if(c[key])s.innerHTML='<option>随机</option>'+c[key].map(o=>`<option>${o}</option>`).join('')});$('p-batch').innerHTML=[1,2,3,5,10,20,50].map(v=>`<label><input type="radio" name="batch" value="${v}" ${v===1?'checked':''}>×${v}</label>`).join('');$('p-sim').oninput=function(){$('p-simv').textContent=this.value+'%'};$('p-hsearch').oninput=()=>this.lh();$('p-hsort').onchange=()=>this.lh();this.lh()}catch(e){}},
+  async start(){const b={model:$('p-model').value,audience:$('p-audience').value,scene:$('p-scene').value,weather:$('p-weather').value,style:$('p-style').value,action:$('p-action').value,min_product:1,max_product:3,batch:+(document.querySelector('input[name="batch"]:checked')?.value||1),tolerance:+$('p-sim').value,extra:$('p-extra').value};const r=await fetch('/api/prompt/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});if(!r.ok){const e=await r.json();toast(e.detail,'error');return}$('p-btn').disabled=true;$('p-stop').disabled=false;$('p-progress').classList.add('on');$('p-res').innerHTML='<div class="emp">生成中...</div>';this.pt=setInterval(()=>this.poll(),800);this.poll()},
+  async stop(){await fetch('/api/prompt/stop',{method:'POST'});clearInterval(this.pt);$('p-btn').disabled=false;$('p-stop').disabled=true},
+  async poll(){try{const r=await fetch('/api/prompt/status'),s=await r.json();$('p-msg').textContent=s.message;$('p-bar').style.width=s.total>0?(s.progress/s.total*100)+'%':'0%';if(!s.running){clearInterval(this.pt);$('p-btn').disabled=false;$('p-stop').disabled=true;this.lr();this.lh()}}catch(e){}},
+  async lr(){try{const r=await fetch('/api/prompt/history?page=1&page_size=20&sort=latest'),d=await r.json();$('p-res').innerHTML=d.items.length?d.items.map(it=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--accent)">#${it.id}</span><span style="font-size:11px;color:var(--text3)">${it.created_at||''} · 复制${it.copy_count||0}</span><div style="display:flex;gap:4px"><button class="btn btn-gh btn-xs" onclick="Pr._cp(${it.id})">复制</button><button class="btn btn-gh btn-xs" onclick="Pr._tg(${it.id})">展开</button></div></div><div style="font-size:13px;color:var(--text2);overflow:hidden;max-height:50px" id="pre-${it.id}">${esc(it.prompt).substring(0,150)}</div><div style="font-size:13px;color:var(--text2);display:none;white-space:pre-wrap" id="full-${it.id}">${esc(it.prompt)}</div></div>`).join(''):'<div class="emp">暂无结果</div>'}catch(e){}},
+  async _cp(id){try{const r=await fetch('/api/prompt/history/'+id);const d=await r.json();await navigator.clipboard.writeText(d.prompt);await fetch('/api/prompt/history/'+id+'/copy',{method:'POST'});toast('已复制','success')}catch(e){}},
+  _tg(id){const p=$('pre-'+id),f=$('full-'+id);p.style.display=p.style.display==='none'?'':'none';f.style.display=f.style.display==='none'?'block':'none'},
+  switch(p){$('ptab-res').style.borderBottom=p==='res'?'2px solid var(--accent)':'none';$('ptab-hist').style.borderBottom=p==='hist'?'2px solid var(--accent)':'none';$('p-res').style.display=p==='res'?'':'none';$('p-hist').style.display=p==='hist'?'':'none';if(p==='hist')this.lh();else this.lr()},
+  async lh(){try{const s=$('p-hsort').value,q=$('p-hsearch').value;const r=await fetch('/api/prompt/history?page=1&page_size=200&sort='+s+'&search='+encodeURIComponent(q)),d=await r.json();$('p-history').innerHTML=d.items.length?d.items.map(it=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:4px;display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" class="p-hcb" data-id="${it.id}" style="${this.bm?'':'display:none'}"><span style="font-weight:700;color:var(--text3);min-width:30px">#${it.id}</span><span style="color:var(--text3)">${it.created_at||''}</span><span style="color:var(--text2)">复制${it.copy_count||0}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)">${esc(it.prompt).substring(0,60)}</span><button class="btn btn-gh btn-xs" onclick="Pr._cp(${it.id})">复制</button>${!this.bm?`<button class="btn btn-gh btn-xs" onclick="Pr._dl(${it.id})">删</button>`:''}</div>`).join(''):'<div class="emp">暂无</div>'}catch(e){}},
+  async _dl(id){if(!confirm('确定删除?'))return;await fetch('/api/prompt/history/'+id,{method:'DELETE'});this.lh()},
+  toggleBatch(){this.bm=!this.bm;$('p-batchmode').textContent=this.bm?'退出':'多选';$('p-batchdel').style.display=this.bm?'':'none';this.lh()},
+  async batchDelete(){const ids=Array.from(document.querySelectorAll('.p-hcb:checked')).map(c=>+c.dataset.id);if(!ids.length){toast('请勾选','error');return}if(!confirm('确定删除'+ids.length+'条?'))return;await fetch('/api/prompt/history/batch-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});this.toggleBatch();this.lh()}
+};
+
+/* ── CP ── */
+const Cp={
+  pt:null,
+  async init(){try{const r=await fetch('/api/copy/types'),d=await r.json();$('c-type').innerHTML=Object.entries(d.types).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');this.lj()}catch(e){}},
+  async start(){const b={copy_type:$('c-type').value,count:+$('c-count').value,workers:+$('c-workers').value,custom_topic:$('c-topic').value,custom_style:$('c-style').value};const r=await fetch('/api/copy/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});if(!r.ok){const e=await r.json();toast(e.detail,'error');return}$('c-btn').disabled=true;$('c-stop').disabled=false;$('c-progress').classList.add('on');$('c-results').innerHTML='<div class="emp">生成中...</div>';this.pt=setInterval(()=>this.poll(),800);this.poll()},
+  async stop(){await fetch('/api/copy/stop',{method:'POST'});clearInterval(this.pt);$('c-btn').disabled=false;$('c-stop').disabled=true;this.lr();this.lj()},
+  async poll(){try{const r=await fetch('/api/copy/status'),s=await r.json();$('c-msg').textContent=s.message;$('c-bar').style.width=s.total>0?(s.progress/s.total*100)+'%':'0%';if(!s.running){clearInterval(this.pt);$('c-btn').disabled=false;$('c-stop').disabled=true;this.lr();this.lj()}}catch(e){}},
+  async lr(){try{const r=await fetch('/api/copy/result');if(!r.ok){$('c-results').innerHTML='<div class="emp">无结果</div>';return}const d=await r.json();$('c-rcount').textContent=`共${d.total_count}条 · 采纳${d.accepted_count} · 相似度${(d.avg_similarity*100).toFixed(1)}%`;let h='';if(d.total_count)h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;margin-bottom:12px;font-size:13px">总计 <b>${d.total_count}</b> · 采纳 <b>${d.accepted_count}</b> · 失败 <b>${d.failed.length}</b>${d.cancelled?' · 已取消':''}</div>`;if(d.job_file){const p=d.job_file.replace(/\\/g,'/').split('/').pop();h+=`<div style="margin-bottom:12px"><a href="/api/copy/jobs/${p}/csv" class="btn btn-g btn-xs">CSV</a> <a href="/api/copy/jobs/${p}/jsonl" class="btn btn-p btn-xs">JSONL</a> <span style="font-size:11px;color:var(--text3);margin-left:8px">${d.gen_time}s</span></div>`}if(d.results?.length){d.results.slice(0,20).forEach((t,i)=>{h+=`<details ${i<3?'open':''} style="margin-bottom:4px"><summary style="font-size:13px;cursor:pointer">文案 ${i+1} — ${t.length}字</summary><div style="background:var(--bg);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 16px;margin:6px 0;white-space:pre-wrap;font-size:13px;line-height:1.7">${esc(t)}</div></details>`});if(d.results.length>20)h+='<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">仅预览前20条，完整数据请下载CSV</div>'}$('c-results').innerHTML=h||'<div class="emp">无结果</div>'}catch(e){}},
+  async lj(){try{const r=await fetch('/api/copy/jobs'),d=await r.json();$('c-jobs').innerHTML=d.jobs.length?d.jobs.slice(0,8).map(j=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11px;border-bottom:1px solid var(--border)"><span>${j.label}</span><span>采纳${j.stats.accepted} 失败${j.stats.failed}</span><span><a href="/api/copy/jobs/${j.prefix}/csv" style="color:var(--green);text-decoration:none">CSV</a> <a href="/api/copy/jobs/${j.prefix}/jsonl" style="color:var(--accent);text-decoration:none">JSONL</a></span></div>`).join(''):'暂无历史任务'}catch(e){$('c-jobs').textContent='加载失败'}},
+  clear(){$('c-results').innerHTML='<div class="emp">配置参数后点击开始</div>';$('c-rcount').textContent=''}
+};
+
+/* ── REC UPLOAD HELPERS ── */
+function setupDropZone(zoneId,inputId,onFiles){
+  var zone=$(zoneId),input=$(inputId);
+  zone.addEventListener('click',function(){input.click()});
+  zone.addEventListener('dragover',function(e){e.preventDefault();zone.classList.add('dragover')});
+  zone.addEventListener('dragleave',function(){zone.classList.remove('dragover')});
+  zone.addEventListener('drop',function(e){e.preventDefault();zone.classList.remove('dragover');var files=Array.from(e.dataTransfer.files).filter(function(f){return/\.(jpg|jpeg|png)$/i.test(f.name)});onFiles(files)});
+}
+setupDropZone('rec-zone','rec-file',function(files){if(!files[0])return;Rec.file=files[0];var reader=new FileReader();reader.onload=function(ev){$('rec-pimg').src=ev.target.result;$('rec-preview').style.display=''};reader.readAsDataURL(files[0]);$('rec-file').files=new DataTransfer().files});
+$('rec-file').addEventListener('change',function(){var f=this.files[0];if(!f)return;Rec.file=f;var reader=new FileReader();reader.onload=function(ev){$('rec-pimg').src=ev.target.result;$('rec-preview').style.display=''};reader.readAsDataURL(f)});
+setupDropZone('rec-bzone','rec-bfile',function(files){Rec.bf=files.slice(0,20);showBatchNames()});
+$('rec-bfile').addEventListener('change',function(){Rec.bf=Array.from(this.files).filter(function(f){return/\.(jpg|jpeg|png)$/i.test(f.name)}).slice(0,20);showBatchNames()});
+function showBatchNames(){var c=$('rec-bnames'),b=$('rec-bupload-btn');if(!Rec.bf.length){c.innerHTML='';b.style.display='none';return}b.style.display='';var h='';Rec.bf.forEach(function(f,i){h+='<div style="font-size:11px;color:var(--text2);padding:2px 4px">'+(i+1)+'. '+f.name+' ('+(f.size/1024).toFixed(0)+'KB)</div>'});c.innerHTML=h}
+</script>
+</body>
+</html>

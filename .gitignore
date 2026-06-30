@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.db
+*.db-shm
+*.db-wal
+logs/
+.env
+legacy_backup/
+model_config.py
+static/gpt-image/app.js
+modules/wenan/outputs/

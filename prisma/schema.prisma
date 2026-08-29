@@ -1,0 +1,187 @@
+// Prisma schema for the VPN/Proxy Airport Reputation platform.
+// SQLite is used for the MVP; all "enums" are stored as String columns
+// (SQLite has no native enum support) and validated in application code.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Airport {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  logoUrl        String?
+  officialSite   String?
+  foundedAt      DateTime?
+  description    String?
+
+  // Official / self-reported data. MUST be flagged as source=official and
+  // MUST NOT participate in the user-reputation score.
+  minPrice          Float?
+  minPlanName       String?
+  minTraffic        String?
+  monthlySupported  Boolean  @default(false)
+  deviceLimit       String?
+  paymentMethods    String?
+  nodeRegions       String?
+  supportsNetflix   Boolean  @default(false)
+  supportsChatgpt   Boolean  @default(false)
+  dataConfidence    String   @default("official")
+
+  status        String   @default("active") // active | merged | closed
+  mergedIntoId  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  aliases    AirportAlias[]
+  domains    AirportDomain[]
+  plans      Plan[]
+  feedbacks  Feedback[]
+  riskEvents RiskEvent[]
+
+  @@index([status])
+  @@index([name])
+}
+
+model AirportAlias {
+  id        String   @id @default(cuid())
+  airportId String
+  airport   Airport  @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  type      String // ALIAS | OLD_NAME
+  value     String
+  createdAt DateTime @default(now())
+
+  @@unique([airportId, type, value])
+  @@index([value])
+}
+
+model AirportDomain {
+  id        String  @id @default(cuid())
+  airportId String
+  airport   Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  domain    String
+
+  @@unique([airportId, domain])
+  @@index([domain])
+}
+
+model Plan {
+  id           String   @id @default(cuid())
+  airportId    String
+  airport      Airport  @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  name         String
+  price        Float
+  billingCycle String // monthly | quarterly | yearly
+  traffic      String? // e.g. "100GB" / "unlimited"
+  deviceLimit  Int?
+  featured     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([airportId])
+}
+
+// Configured public data sources. credibilityWeight drives the source-credibility
+// factor used when weighting feedback.
+model DataSource {
+  id              String   @id @default(cuid())
+  platform        String // V2EX | Reddit | Telegram | GitHub | X | Blog | Forum | ...
+  url             String?
+  kind            String   @default("community") // community | blog | official | review_blog | nav
+  credibilityWeight Float @default(0.6)
+  crawlStatus     String   @default("manual") // manual | active | paused | error
+  lastCrawledAt   DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  feedbacks Feedback[]
+
+  @@index([platform])
+}
+
+model Feedback {
+  id           String  @id @default(cuid())
+  airportId    String
+  airport      Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  dataSourceId String?
+  dataSource   DataSource? @relation(fields: [dataSourceId], references: [id], onDelete: SetNull)
+
+  // Provenance (raw evidence must always be preserved)
+  sourcePlatform String // denormalized from DataSource for query convenience
+  originalUrl    String?
+  authorName     String?
+  authorId       String?
+  authorMeta     String? // JSON: { registeredAt, postCount, onlyPromotes, ... }
+  publishedAt    DateTime?
+  crawledAt      DateTime @default(now())
+  rawContent     String
+  processedContent String?
+
+  // --- AI structured analysis (Phase 3) ---
+  analyzedAt        DateTime?
+  sentiment         String? // positive | neutral | negative
+  aiStability       Int?    // 1-10
+  aiSpeed           Int?
+  aiCustomerService Int?
+  aiValue           Int?
+  aiNodeQuality     Int?
+  aiUnlock          Int?
+  usageDuration     String?
+  regionTags        String? // JSON map: { hongkong: "negative", japan: "positive" }
+  serviceTags       String? // JSON array
+  priceTags         String? // JSON array
+  unlockTags        String? // JSON array
+  riskTags          String? // JSON array
+  promotionProbability Float?
+  informationQuality   Float?
+  aiSummary         String?
+  aiRaw             String? // full raw model output (JSON)
+
+  // --- Credibility / weighting (Phase 3 & 4) ---
+  sourceCredibility Float?
+  userCredibility   Float?
+  contentQuality     Float?
+  timeWeight         Float?
+  promotionFactor    Float?
+  computedWeight     Float?
+
+  status String @default("pending") // pending | analyzed | approved | rejected | promotion | official
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([airportId])
+  @@index([status])
+  @@index([sourcePlatform])
+}
+
+model RiskEvent {
+  id          String   @id @default(cuid())
+  airportId   String
+  airport     Airport  @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  eventDate   DateTime
+  title       String
+  description String?
+  type        String // official | user_feedback
+  source      String?
+  sourceUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([airportId])
+  @@index([eventDate])
+}
+
+// Singleton row holding tunable scoring configuration (composite weights + time decay).
+model ScoreConfig {
+  id               String   @id @default("singleton")
+  compositeWeights String   @default("{\"stability\":0.3,\"speed\":0.2,\"value\":0.2,\"nodeQuality\":0.1,\"customerService\":0.1,\"unlock\":0.1}")
+  timeDecay        String   @default("{\"7\":1.0,\"30\":0.95,\"90\":0.85,\"180\":0.7,\"365\":0.5,\"730\":0.3,\"else\":0.15}")
+  updatedAt        DateTime @updatedAt
+}
